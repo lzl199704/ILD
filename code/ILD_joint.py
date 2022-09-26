@@ -5,7 +5,7 @@ from tensorflow import keras
 from tensorflow.keras import backend
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications import InceptionResNetV2, ResNet50, InceptionV3, DenseNet121
+from tensorflow.keras.applications import InceptionResNetV2
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, GlobalAveragePooling2D, BatchNormalization
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Activation, Concatenate, Lambda
 from tensorflow.keras.models import Model
@@ -24,6 +24,8 @@ from tensorflow.keras import Input
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu_node', type=str, help='specify gpu nodes')
+parser.add_argument('--train_path', type=str, default='./data/classification/train_joint.csv')
+parser.add_argument('--val_path', type=str, default='./data/classification/val_joint.csv')
 parser.add_argument('--batch_size', type=int, help='batch size', default=256)
 parser.add_argument('--image_size', type=int, help='image size', default=256)
 parser.add_argument('--epoch', type=int, help='number of epochs', default=30)
@@ -43,9 +45,8 @@ image_size = args.image_size
 batch_size = args.batch_size
 num_epoches = args.epoch
 
-
-df_t=pd.read_excel("/raid/data/yanglab/ILD/joint_train_250.xlsx")
-df_v=pd.read_excel("/raid/data/yanglab/ILD/joint_val_250.xlsx")
+df_t=pd.read_csv(args.train_path)
+df_v=pd.read_csv(args.val_path)
 
 train_variables = [
        'kvp','manufacturer','Home_O2','Occupation','CurrentSmoker','FormerSmoker','Hx_disease','sex','age',
@@ -63,7 +64,7 @@ def get_compiled_model():
     meta = Dense(64,activation='relu')(meta_input) ## this is the MLP to train clinical variables
     meta = Dense(32,activation='relu')(meta)
     
-    model_dir ="/raid/data/yanglab/RadImageNet_models/RadImageNet-IRV2-224-512-081421_notop.h5"
+    model_dir ="../RadImageNet_models/RadImageNet-IRV2-notop.h5" ###RadImageNet pretrained models can be downloaded at https://github.com/BMEII-AI/RadImageNet
     base_model = InceptionResNetV2(weights=model_dir, input_shape=(image_size, image_size, 3), include_top=False,pooling='avg')
     if args.structure == 'freezeall':
         for layer in base_model.layers:
@@ -115,7 +116,6 @@ class ImageTextDataGenerator(keras.utils.Sequence):
                  n_classes=num_classes, 
                  shuffle=True):
         """Initialization.
-        
         Args:
             img_files: A list of path to image files.
             clinical_info: A dictionary of corresponding clinical variables.
@@ -134,7 +134,6 @@ class ImageTextDataGenerator(keras.utils.Sequence):
             self.std = np.zeros(n_channels) + 1
         else:
             self.std = std
-        
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.shuffle = shuffle
@@ -154,7 +153,6 @@ class ImageTextDataGenerator(keras.utils.Sequence):
 
         # Generate data
         X, y = self.__data_generation(img_files_temp)
-
         return X, y
 
     def on_epoch_end(self):
@@ -162,10 +160,6 @@ class ImageTextDataGenerator(keras.utils.Sequence):
         self.indexes = np.arange(len(self.img_files))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
-            
-   # def __get_label(self, file_name):
-   #     return int(self.labels[self.labels.index == file_name]['Consensus'])
-        #return 0 if 'benigin' in file_name else 1
 
     def __data_generation(self, img_files_temp):
         """Generates data containing batch_size samples."""
@@ -174,7 +168,6 @@ class ImageTextDataGenerator(keras.utils.Sequence):
         X_img = []
         X_clinical = []
         y = np.empty((self.batch_size), dtype=int)
-
         # Generate data
         for i, img_file in enumerate(img_files_temp):
             # Read image
@@ -190,15 +183,7 @@ class ImageTextDataGenerator(keras.utils.Sequence):
             # Normalization
             for ch in range(self.n_channels):
                 img[:, :, ch] = (img[:, :, ch] - self.ave[ch])/self.std[ch]
-            
-            if self.shuffle:
-                # Some image augmentation codes
-                ###### You can put your preprocessing codes here. #####
-                #img = tf.image.random_crop(img, size=[IMG_SIZE, IMG_SIZE, 3])
-                #img = tf.image.random_brightness(img, max_delta=0.5)
-                #return img
-                pass
-
+           
             X_img.append(img)
             df_cf = self.clinical_info[self.clinical_info['filename']== img_file]
             df_cf.set_index('filename',inplace=True)
@@ -207,23 +192,17 @@ class ImageTextDataGenerator(keras.utils.Sequence):
                 print(filename)
             X_clinical.append(c_info)
             y[i] = int(self.labels[self.labels.filename == img_file]['Consensus'])
-            
         X = [np.array(X_img), np.array(X_clinical)]
-        #print(y)
         return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
 
-
-filepath="/raid/data/yanglab/ILD/ILD_results/models/joint_no_med-250-" + args.structure + "-" + database + "-" + args.model_name + "-" + str(image_size) + "-" + str(batch_size) + "-"+str(args.lr)+ ".h5"   
+filepath="./models/classification-joint-CNN.h5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
-
 
 train_labels = df_t[['Consensus']]
 val_labels = df_v[['Consensus']]
 
-
 train_labels['filename'] = df_norm_train['filename']
 val_labels['filename'] = df_norm_val['filename']
-
 
 train_datagen = ImageTextDataGenerator(img_files=list(df_norm_train.filename), 
                               clinical_info=df_norm_train,
@@ -231,8 +210,6 @@ train_datagen = ImageTextDataGenerator(img_files=list(df_norm_train.filename),
                               labels=train_labels,  
                               batch_size=batch_size, 
                                        shuffle=True)
-
-
 val_datagen = ImageTextDataGenerator(img_files=list(df_norm_val.filename), 
                                      clinical_info=df_norm_val, 
                                      dim = (image_size, image_size), 
@@ -254,5 +231,5 @@ val_acc = history.history['val_accuracy']
 train_loss = history.history['loss']
 val_loss = history.history['val_loss']
 d_loss = pd.DataFrame({'train_acc':train_acc, 'val_acc':val_acc, 'train_loss':train_loss, 'val_loss':val_loss})
-d_loss.to_excel("/raid/data/yanglab/ILD/ILD_results/loss/joint-no-med-250-" +args.structure+ "-" + database + "-" + args.model_name + "-" + str(image_size) + "-" + str(batch_size) + "-"+str(args.lr)+ ".xlsx", index=False)
+d_loss.to_excel("./loss/loss_classification_joint_CNN.xlsx", index=False)
 
