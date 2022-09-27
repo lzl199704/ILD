@@ -16,6 +16,12 @@ from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 from sklearn.preprocessing import MinMaxScaler
 
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--train_path', type=str, default='./data/survival_analysis/time_series_train.csv')
+parser.add_argument('--val_path', type=str, default='./data/survival_analysis/time_series_val.csv')
+parser.add_argument('--test_path', type=str, default='./data/survival_analysis/time_series_test.csv')
+args = parser.parse_args()
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -31,8 +37,9 @@ def get_label(f):
     #np.zero a numpy array
     return l
 
+### choose number of year survival ananlysis
+### usually patients will have a CT scan every half year, so for a 3-year survival analysis, 7scans can be considered as a maximum number 
 year_num=3
-
 if year_num==0:
     shape_num=1
 elif year_num==1:
@@ -42,17 +49,16 @@ elif year_num==2:
 else: shape_num=7
 
 
-df_train=pd.read_csv("/raid/nfs4/home/liuz14/projects/ILD/verification/time_series/train_"+str(year_num)+"year_original_0214.csv")
-df_val=pd.read_csv("/raid/nfs4/home/liuz14/projects/ILD/verification/time_series/val_"+str(year_num)+"year_original_0214.csv")
-df_test=pd.read_csv("/raid/nfs4/home/liuz14/projects/ILD/verification/time_series/test_"+str(year_num)+"year_original_0214.csv")
+df_train=pd.read_csv(args.train_path)
+df_val=pd.read_csv(args.val_path)
+df_test = pd.read_csv(args.test_path)
 
 
+dff_train=df_train.drop(columns=['MRN','LivingStatus'])
+dff_val=df_val.drop(columns=['MRN','LivingStatus'])
+dff_test=df_test.drop(columns=['MRN','LivingStatus'])
 
-dff_train=df_train.drop(columns=['MRN','LivingStatus','Med_label','Therapeutic_label'])
-dff_val=df_val.drop(columns=['MRN','LivingStatus','Med_label','Therapeutic_label'])
-dff_test=df_test.drop(columns=['MRN','LivingStatus','Med_label','Therapeutic_label'])
-
-
+### if a patient has visits less than the shape_num defined visit number, we will fill the missing values as 0
 def preprocess_dataframe(dataframe1,scaled_data):
     pid_list=scaled_data.MRN.unique()
     feature_list=scaled_data.columns
@@ -73,7 +79,7 @@ def preprocess_dataframe(dataframe1,scaled_data):
     return dataframe1
 
 
-
+### apply minmaxscaler to the raw inputs
 ss=MinMaxScaler()
 train_scaled = pd.DataFrame(ss.fit_transform(dff_train),columns = dff_train.columns)
 val_scaled = pd.DataFrame(ss.fit_transform(dff_val),columns = dff_val.columns)
@@ -97,8 +103,6 @@ x_train=np.reshape(features1,(len(df_train.MRN.unique()),shape_num,df_train_feat
 features2=df_val_feature.to_numpy()
 x_val=np.reshape(features2,(len(df_val.MRN.unique()),shape_num,df_val_feature.shape[1]))
 
-
-
 df_train_label=df_train_label.drop_duplicates(subset=['MRN','LivingStatus'], keep='first')
 df_train_label=df_train_label.reset_index(drop=True)
 df_val_label=df_val_label.drop_duplicates(subset=['MRN','LivingStatus'], keep='first')
@@ -109,30 +113,23 @@ y_val = np.array(get_label(df_val_label["LivingStatus"]))
 
 
 test_scaled = pd.DataFrame(ss.fit_transform(dff_test),columns = dff_test.columns)
-
 test_scaled['MRN']=df_test['MRN']
 test_scaled['LivingStatus']=df_test['LivingStatus']
-
 df3=pd.DataFrame()
 df3=preprocess_dataframe(df3,test_scaled)
-
 df_test_feature=df3.iloc[:,:(df3.shape[1]-2)]
-
 df_test_label=df3[['MRN','LivingStatus']]
-
 features3=df_test_feature.to_numpy()
 x_test=np.reshape(features3,(len(df_test.MRN.unique()),shape_num,df_test_feature.shape[1]))
-
 
 df_test_label=df_test_label.drop_duplicates(subset=['MRN','LivingStatus'], keep='first')
 df_test_label=df_test_label.reset_index(drop=True)
 y_test = np.array(get_label(df_test_label["LivingStatus"]))
-
-
-
 n_classes = len(np.unique(y_train))
 
 
+
+###build transformer models
 def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
     # Normalization and Attention
     x = layers.LayerNormalization(epsilon=1e-6)(inputs)
@@ -177,13 +174,9 @@ def build_model(
                     )
     return model
 
-
-
 input_shape = x_train.shape[1:]
 num_heads = 4
-filepath = "/raid/data/yanglab/ILD/ILD_results/models/transformer_without_treatment/nh4_year3_withoutmed_" 
-    
-
+filepath = "./models/survival_analysis_"+str(year_num)+'_transformer_' 
 
 def run_model(i):
     model = build_model(
@@ -196,13 +189,10 @@ def run_model(i):
         mlp_dropout=0.4,
         dropout=0.25,
     )
-    
-    
     checkpoint = keras.callbacks.ModelCheckpoint(
         filepath+str(i), monitor='val_loss', mode='min', save_weights_only=True, save_best_only=True, verbose=1
     )
-    
-    model.fit(
+    history = model.fit(
         x_train,
         y_train,
         validation_data=(x_val,y_val),
@@ -210,8 +200,14 @@ def run_model(i):
         batch_size=64,
         callbacks=[checkpoint]
     )    
+    train_acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+    train_loss = history.history['loss']
+    val_loss = history.history['val_loss']
+    d_loss = pd.DataFrame({'train_acc':train_acc, 'val_acc':val_acc, 'train_loss':train_loss, 'val_loss':val_loss})
+    d_loss.to_excel("./loss/survival_analysis_"+str(year_num)+'_transformer_'+str(i)+".xlsx", index=False)
     
-###run 30 iterations
+###run 30 iterations for each settings
 for i in range(30):
     run_model(i)
 
