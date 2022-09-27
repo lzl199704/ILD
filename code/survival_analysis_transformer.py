@@ -125,7 +125,7 @@ n_classes = len(np.unique(y_train))
 
 
 
-###build transformer models
+###build transformer models from https://github.com/keras-team/keras-io/blob/master/examples/timeseries/timeseries_classification_transformer.py
 def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
     # Normalization and Attention
     x = layers.LayerNormalization(epsilon=1e-6)(inputs)
