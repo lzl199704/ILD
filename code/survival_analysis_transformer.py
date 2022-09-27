@@ -8,12 +8,8 @@ from tensorflow.keras.layers import Dense, Dropout, Flatten, Activation, Concate
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 from tensorflow.keras.optimizers import Adam, SGD
-from tensorflow.keras import regularizers, activations
 import os
 from tensorflow.keras.losses import CategoricalCrossentropy, SparseCategoricalCrossentropy
-from time import time
-from sklearn.utils import shuffle
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 from sklearn.preprocessing import MinMaxScaler
 
 import argparse
