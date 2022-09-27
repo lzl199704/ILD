@@ -5,7 +5,7 @@ In this study, we used deep learning algorithms that integrated clinical history
 
 # Code
 There are three models for ILD classification, MLP, CT_CNN, and joint model. The MLP model only utilizes clinical information, CT_CNN model only uses CT images as inputs, and the joint model combines both information as inputs. 
-![alt text](https://user-images.githubusercontent.com/106784487/192621173-8ac594b3-5023-4287-814e-130e985917ba.png)
+![alt text](https://github.com/lzl199704/ILD/blob/main/util/FigureS2.png)
 For the survival analysis, the transformer model was developed to predict survival chance. 
 
 # Citation
