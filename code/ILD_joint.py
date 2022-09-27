@@ -100,7 +100,7 @@ train_steps =  df_norm_train.shape[0]/ batch_size
 val_steps = df_norm_val.shape[0] / batch_size
 
 class ImageTextDataGenerator(keras.utils.Sequence):
-    """Generates data for Keras."""
+    """Generates data for joint input."""
     def __init__(self, 
                  img_files=None, 
                  clinical_info=None, 
@@ -144,10 +144,8 @@ class ImageTextDataGenerator(keras.utils.Sequence):
         """Generate one batch of data."""
         # Generate indexes of the batch
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-
         # Find list of IDs
         img_files_temp = [self.img_files[k] for k in indexes]
-
         # Generate data
         X, y = self.__data_generation(img_files_temp)
         return X, y
