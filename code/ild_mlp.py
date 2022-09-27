@@ -1,19 +1,23 @@
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-import os
 from time import time
 from sklearn.metrics import roc_auc_score
 import cv2
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn import svm, datasets
+from sklearn import datasets
 from sklearn.neural_network import MLPClassifier
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--train_path', type=str, default='./data/classification/train_joint.csv')
+parser.add_argument('--val_path', type=str, default='./data/classification/val_joint.csv')
+parser.add_argument('--test_path', type=str, default='./data/classification/test_joint.csv')
+args = parser.parse_args()
 
-df_t=pd.read_excel("/raid/data/yanglab/ILD/joint_train_xm.xlsx")
-df_v=pd.read_excel("/raid/data/yanglab/ILD/joint_val_xm.xlsx")
-df_test = pd.read_excel("/raid/data/yanglab/ILD/joint_test_xm.xlsx")
+df_t=pd.read_csv(args.train_path)
+df_v=pd.read_csv(args.val_path)
+df_test = pd.read_csv(args.test_path)
 
 
 df_test.MRN=df_test.MRN.astype(str)
@@ -97,4 +101,3 @@ d1=y_score
 s1=np.argmax(d1,axis=1)
 tru_label=y_val.to_numpy()
 accuracy_score(tru_label,s1)
-
