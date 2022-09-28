@@ -1,3 +1,3 @@
-thickness,filename,Rad Dx,rad_label,study_date,MRN,Home_O2,FEV1/FVC,FEV1,DLCO,Occupation,CurrentSmoker,FormerSmoker,Hx_disease,pulm_HTN,Biopsy,kvp,manufacturer,hospital,sex,age,FVC,Consensus,LivingStatus,MedicationName,StartInstant,TherapeuticClass,Med_label,Therapeutic_label,Consensus_label
-0.0,0,0,0,0,0,0,0,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0.0,0,0,0,0.0,0,0.0,0.0,0
-0.0,0,0,0,0,0,0,0,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0.0,0,0,0,0.0,0,0.0,0.0,0
+MRN,thickness,filename,Rad Dx,rad_label,study_date,Home_O2,FEV1/FVC,FEV1,DLCO,Occupation,CurrentSmoker,FormerSmoker,Hx_disease,pulm_HTN,Biopsy,kvp,manufacturer,hospital,sex,age,FVC,Consensus,LivingStatus,MedicationName,StartInstant,TherapeuticClass,Med_label,Therapeutic_label,Consensus_label
+patient0,0,0,0,0,0,0,0,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0.0,0,0,0,0.0,0,0.0,0.0,0
+patient1,0,0,0,0,0,0,0,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0.0,0,0,0,0.0,0,0.0,0.0,0
