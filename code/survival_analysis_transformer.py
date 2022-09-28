@@ -175,7 +175,7 @@ input_shape = x_train.shape[1:]
 num_heads = 4
 filepath = "./models/survival_analysis_"+str(year_num)+'_transformer_' 
 
-def run_model(i):
+def run_model():
     model = build_model(
         input_shape,
         head_size=512,
@@ -187,7 +187,7 @@ def run_model(i):
         dropout=0.25,
     )
     checkpoint = keras.callbacks.ModelCheckpoint(
-        filepath+str(i), monitor='val_loss', mode='min', save_weights_only=True, save_best_only=True, verbose=1
+        filepath, monitor='val_loss', mode='min', save_weights_only=True, save_best_only=True, verbose=1
     )
     history = model.fit(
         x_train,
@@ -202,11 +202,8 @@ def run_model(i):
     train_loss = history.history['loss']
     val_loss = history.history['val_loss']
     d_loss = pd.DataFrame({'train_acc':train_acc, 'val_acc':val_acc, 'train_loss':train_loss, 'val_loss':val_loss})
-    d_loss.to_excel("./loss/survival_analysis_"+str(year_num)+'_transformer_'+str(i)+".xlsx", index=False)
+    d_loss.to_excel("./loss/survival_analysis_"+str(year_num)+'_transformer.xlsx", index=False)
     
-###run 30 iterations for each settings
-for i in range(30):
-    run_model(i)
 
 
 
