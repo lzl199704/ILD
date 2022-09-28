@@ -49,7 +49,6 @@ df_train=pd.read_csv(args.train_path)
 df_val=pd.read_csv(args.val_path)
 df_test = pd.read_csv(args.test_path)
 
-
 dff_train=df_train.drop(columns=['MRN','LivingStatus'])
 dff_val=df_val.drop(columns=['MRN','LivingStatus'])
 dff_test=df_test.drop(columns=['MRN','LivingStatus'])
@@ -77,53 +76,28 @@ def preprocess_dataframe(dataframe1,scaled_data):
 
 ### apply minmaxscaler to the raw inputs
 ss=MinMaxScaler()
-train_scaled = pd.DataFrame(ss.fit_transform(dff_train),columns = dff_train.columns)
-val_scaled = pd.DataFrame(ss.fit_transform(dff_val),columns = dff_val.columns)
-train_scaled['MRN']=df_train['MRN']
-train_scaled['LivingStatus']=df_train['LivingStatus']
-val_scaled['MRN']=df_val['MRN']
-val_scaled['LivingStatus']=df_val['LivingStatus']
+def apply_scaler(dataframe1, dataframe2):
+    temp_scaled = pd.DataFrame(ss.fit_transform(dataframe2),columns = dataframe2.columns)
+    temp_scaled['MRN'] = dataframe1['MRN']
+    temp_scaled['LivingStatus'] = dataframe1['LivingStatus']
+    output = pd.DataFrame()
+    output = preprocess_dataframe(output,temp_scaled)
+    df_feature = output.iloc[:,:(output.shape[1]-2)]
+    df_label = output[['MRN','LivingStatus']]
+    df_label = df_label.drop_duplicates(subset=['MRN','LivingStatus'], keep='first')
+    df_label=df_label.reset_index(drop=True)
+    y = np.array(get_label(df_label["LivingStatus"]))
+    
+    features = df_feature.to_numpy()
+    x = np.reshape(features,(len(dataframe1.MRN.unique()), shape_num , df_feature.shape[1]))
+    
+    return x , y
 
-df1=pd.DataFrame()
-df1=preprocess_dataframe(df1,train_scaled)
-df2=pd.DataFrame()
-df2=preprocess_dataframe(df2,val_scaled)
+x_train, y_train = apply_scaler(df_train, dff_train)
+x_val, y_val = apply_scaler(df_val,dff_val)
+x_test, y_test = apply_scaler(df_test,dff_test)
 
-df_train_feature=df1.iloc[:,:(df1.shape[1]-2)]
-df_val_feature=df2.iloc[:,:(df2.shape[1]-2)]
-df_train_label=df1[['MRN','LivingStatus']]
-df_val_label=df2[['MRN','LivingStatus']]
-
-features1=df_train_feature.to_numpy()
-x_train=np.reshape(features1,(len(df_train.MRN.unique()),shape_num,df_train_feature.shape[1]))
-features2=df_val_feature.to_numpy()
-x_val=np.reshape(features2,(len(df_val.MRN.unique()),shape_num,df_val_feature.shape[1]))
-
-df_train_label=df_train_label.drop_duplicates(subset=['MRN','LivingStatus'], keep='first')
-df_train_label=df_train_label.reset_index(drop=True)
-df_val_label=df_val_label.drop_duplicates(subset=['MRN','LivingStatus'], keep='first')
-df_val_label=df_val_label.reset_index(drop=True)
-
-y_train = np.array(get_label(df_train_label["LivingStatus"]))
-y_val = np.array(get_label(df_val_label["LivingStatus"]))
-
-
-test_scaled = pd.DataFrame(ss.fit_transform(dff_test),columns = dff_test.columns)
-test_scaled['MRN']=df_test['MRN']
-test_scaled['LivingStatus']=df_test['LivingStatus']
-df3=pd.DataFrame()
-df3=preprocess_dataframe(df3,test_scaled)
-df_test_feature=df3.iloc[:,:(df3.shape[1]-2)]
-df_test_label=df3[['MRN','LivingStatus']]
-features3=df_test_feature.to_numpy()
-x_test=np.reshape(features3,(len(df_test.MRN.unique()),shape_num,df_test_feature.shape[1]))
-
-df_test_label=df_test_label.drop_duplicates(subset=['MRN','LivingStatus'], keep='first')
-df_test_label=df_test_label.reset_index(drop=True)
-y_test = np.array(get_label(df_test_label["LivingStatus"]))
 n_classes = len(np.unique(y_train))
-
-
 
 ###build transformer models from keras transformer example
 ###https://github.com/keras-team/keras-io/blob/master/examples/timeseries/timeseries_classification_transformer.py
