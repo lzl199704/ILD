@@ -32,6 +32,7 @@ args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"]= args.gpu_node
 
 ### ImageTextDataGenerator class will process clinical info and img_files together during data generation process
+### similar customization of DataGenerator class for joint inputs can follow this link https://gist.github.com/krxat/dda5351cd143fd052e63fe6c794e984c
 class ImageTextDataGenerator(keras.utils.Sequence):
     """Generates data for joint input."""
     def __init__(self, 
@@ -100,19 +101,16 @@ class ImageTextDataGenerator(keras.utils.Sequence):
         for i, img_file in enumerate(img_files_temp):
             # Read image
             img = image.load_img(img_file, target_size=self.dim)
-            
             # Convert to 3 channels
             img = image.img_to_array(img)
-            
             # Preprocess_input and rescale images 
             img = preprocess_input(img)
             img = img/255.0 
-            
             # Normalization
             for ch in range(self.n_channels):
                 img[:, :, ch] = (img[:, :, ch] - self.ave[ch])/self.std[ch]
-           
             X_img.append(img)
+            
             df_cf = self.clinical_info[self.clinical_info['filename']== img_file]
             df_cf.set_index('filename',inplace=True)
             c_info = df_cf.values.flatten()
