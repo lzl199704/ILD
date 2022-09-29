@@ -22,6 +22,7 @@ args = parser.parse_args()
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
+### annotate label with following: L indicates alive after three years; D indicates dead within three years;
 def get_label(f):
     l = []
     for i in f:
@@ -32,7 +33,7 @@ def get_label(f):
     #np.zero a numpy array
     return l
 
-### if a patient has visits less than the shape_num defined visit number, we will fill the missing values as 0
+### if a patient has visits less than the shape_num defined visit number, we will fill the missing visits as 0
 def preprocess_dataframe(dataframe1,scaled_data):
     pid_list=scaled_data.MRN.unique()
     feature_list=scaled_data.columns
