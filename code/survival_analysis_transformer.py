@@ -22,7 +22,6 @@ args = parser.parse_args()
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
-
 def get_label(f):
     l = []
     for i in f:
@@ -32,26 +31,6 @@ def get_label(f):
             l.append(0)
     #np.zero a numpy array
     return l
-
-### choose number of year survival ananlysis
-### usually patients will have a CT scan every half year, so for a 3-year survival analysis, 7scans can be considered as a maximum number 
-year_num=3
-if year_num==0:
-    shape_num=1
-elif year_num==1:
-    shape_num=4
-elif year_num==2:
-    shape_num=6
-else: shape_num=7
-
-
-df_train=pd.read_csv(args.train_path)
-df_val=pd.read_csv(args.val_path)
-df_test = pd.read_csv(args.test_path)
-
-dff_train=df_train.drop(columns=['MRN','LivingStatus'])
-dff_val=df_val.drop(columns=['MRN','LivingStatus'])
-dff_test=df_test.drop(columns=['MRN','LivingStatus'])
 
 ### if a patient has visits less than the shape_num defined visit number, we will fill the missing values as 0
 def preprocess_dataframe(dataframe1,scaled_data):
@@ -73,8 +52,7 @@ def preprocess_dataframe(dataframe1,scaled_data):
     dataframe1.drop(['index'], axis=1, inplace=True)
     return dataframe1
 
-
-### apply minmaxscaler to the raw inputs
+### apply minmaxscaler to the raw inputs; x,y indicates normalized inputs and output ground truth
 ss=MinMaxScaler()
 def apply_scaler(dataframe1, dataframe2):
     temp_scaled = pd.DataFrame(ss.fit_transform(dataframe2),columns = dataframe2.columns)
@@ -93,12 +71,6 @@ def apply_scaler(dataframe1, dataframe2):
     
     return x , y
 
-x_train, y_train = apply_scaler(df_train, dff_train)
-x_val, y_val = apply_scaler(df_val,dff_val)
-x_test, y_test = apply_scaler(df_test,dff_test)
-
-n_classes = len(np.unique(y_train))
-
 ###build transformer models from keras transformer example
 ###https://github.com/keras-team/keras-io/blob/master/examples/timeseries/timeseries_classification_transformer.py
 def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
@@ -116,9 +88,6 @@ def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
     x = layers.Dropout(dropout)(x)
     x = layers.Conv1D(filters=inputs.shape[-1], kernel_size=1)(x)
     return x + res
-
-
-
 def build_model(
     input_shape,
     head_size,
@@ -144,16 +113,12 @@ def build_model(
                     metrics=["sparse_categorical_accuracy"],
                     )
     return model
-
-input_shape = x_train.shape[1:]
-num_heads = 4
-filepath = "./models/survival_analysis_"+str(year_num)+'_transformer_' 
-
+###run model function
 def run_model():
     model = build_model(
         input_shape,
         head_size=512,
-        num_heads=num_heads,
+        num_heads=4,
         ff_dim=16,
         num_transformer_blocks=16,
         mlp_units=[128],
@@ -177,7 +142,33 @@ def run_model():
     val_loss = history.history['val_loss']
     d_loss = pd.DataFrame({'train_acc':train_acc, 'val_acc':val_acc, 'train_loss':train_loss, 'val_loss':val_loss})
     d_loss.to_excel("./loss/survival_analysis_"+str(year_num)+'_transformer.xlsx", index=False)
-    
+  
 
 
+if __name__ == '__main__':
+    ### choose number of year survival ananlysis
+    ### usually patients will have a CT scan every half year, so for a 3-year survival analysis, 7scans can be considered as a maximum number 
+    year_num=3
+    if year_num==0:
+        shape_num=1
+    elif year_num==1:
+        shape_num=4
+    elif year_num==2:
+        shape_num=6
+    else: shape_num=7
 
+    df_train=pd.read_csv(args.train_path)
+    df_val=pd.read_csv(args.val_path)
+    df_test = pd.read_csv(args.test_path)
+    dff_train=df_train.drop(columns=['MRN','LivingStatus'])
+    dff_val=df_val.drop(columns=['MRN','LivingStatus'])
+    dff_test=df_test.drop(columns=['MRN','LivingStatus'])
+
+    x_train, y_train = apply_scaler(df_train, dff_train)
+    x_val, y_val = apply_scaler(df_val,dff_val)
+    x_test, y_test = apply_scaler(df_test,dff_test)
+
+    n_classes = len(np.unique(y_train))
+    input_shape = x_train.shape[1:]
+    filepath = "./models/survival_analysis_"+str(year_num)+'_transformer' 
+    run_model()
