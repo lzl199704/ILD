@@ -100,6 +100,7 @@ def get_compiled_model():
     model.compile(optimizer=adam, loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
     return model
 
+model = get_compiled_model()
 
 train_steps =  df_train.shape[0]/ batch_size
 val_steps = df_val.shape[0] / batch_size
