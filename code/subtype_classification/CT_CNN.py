@@ -2,23 +2,19 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import backend
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications import InceptionResNetV2
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, GlobalAveragePooling2D, BatchNormalization
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Activation, Concatenate, Lambda
 from tensorflow.keras.models import Model
-from tensorflow.keras import layers
 from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint,Callback, TensorBoard
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras import regularizers, activations
 import os
-from time import time
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 from sklearn.metrics import roc_auc_score
-import cv2
+from tensorflow.keras import Input
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -26,8 +22,6 @@ parser.add_argument('--train_path', type=str, default='./data/classification/tra
 parser.add_argument('--val_path', type=str, default='./data/classification/val_joint.csv')
 parser.add_argument('--test_path', type=str, default='./data/classification/test_joint.csv')
 args = parser.parse_args()
-
-
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -93,7 +87,7 @@ checkpoint_callback = keras.callbacks.ModelCheckpoint(
     )
 
 
-
+###RadImageNet pretrained models can be downloaded at https://github.com/BMEII-AI/RadImageNet
 def get_compiled_model():
     model_dir ="../RadImageNet_models/RadImageNet-IRV2-notop.h5"
     base_model = InceptionResNetV2(weights=model_dir, input_shape=(image_size, image_size, 3), include_top=False,pooling='avg')
@@ -109,15 +103,6 @@ def get_compiled_model():
 
 train_steps =  df_train.shape[0]/ batch_size
 val_steps = df_val.shape[0] / batch_size
-
-
-strategy = tf.distribute.MirroredStrategy()
-print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
-
-
-
-with strategy.scope():
-    model = get_compiled_model()
 
 
 history = model.fit(
