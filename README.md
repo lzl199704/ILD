@@ -8,8 +8,7 @@ The Transformer framework with the inputs of longitudinal CT scans and clinical 
 ![alt text](https://github.com/lzl199704/ILD/blob/main/util/f4_ild_300dpi.png)
 
 # Code
-There are three models for ILD classification, MLP, CT_CNN, and joint model. The MLP model only utilizes clinical information, CT_CNN model only uses CT images as inputs, and the joint model combines both information as inputs. The ILD_classification.py in the code folder is the code for the joint model.
-![alt text](https://github.com/lzl199704/ILD/blob/main/util/FigureS2.png)
+The ILD_classification.py in the code folder is the code for the joint model.
 
 For the survival analysis, the transformer model was developed to predict survival chance. The survival_analysis_transformer.py in the code folder can be used for this application.
 
