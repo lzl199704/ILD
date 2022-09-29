@@ -10,7 +10,7 @@ The Transformer framework with the inputs of longitudinal CT scans and clinical 
 # Code
 The ILD_classification.py in the code folder is the code for the joint model.
 
-For the survival analysis, the transformer model was developed to predict survival chance. The survival_analysis_transformer.py in the code folder can be used for this application.
+For the survival analysis, the transformer model was developed to predict survival chance. The transformer.py in the code folder can be used in the paper, and lstm.py is another approach compared in extension.
 
 # Citation
 If you find code helpful, cite paper:
