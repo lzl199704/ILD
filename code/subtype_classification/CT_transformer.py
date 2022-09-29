@@ -77,8 +77,7 @@ class PatchEncoder(layers.Layer):
         config['projection_dim'] = self.projection_dim
         return config
   
-def ct_model():
-    ## create vit
+def vit_model():
     inputs = layers.Input(shape=input_shape)
     # Augment data.
     #augmented = data_augmentation(inputs)
@@ -117,7 +116,7 @@ def ct_model():
     return model
 
 def get_compiled_model():
-    model = ct_model()
+    model = vit_model()
     adam = Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999, decay=0.0001)
     model.compile(optimizer=adam, loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
     return model  
