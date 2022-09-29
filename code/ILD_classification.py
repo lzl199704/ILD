@@ -26,79 +26,12 @@ parser.add_argument('--val_path', type=str, default='./data/classification/val_j
 parser.add_argument('--batch_size', type=int, help='batch size', default=256)
 parser.add_argument('--image_size', type=int, help='image size', default=256)
 parser.add_argument('--epoch', type=int, help='number of epochs', default=30)
-parser.add_argument('--structure', type=str, help='unfreezeall/freezeall/unfreezetop10', default=30)
 parser.add_argument('--lr', type=float, help='learning rate', default=0.001)
 args = parser.parse_args()
 
 os.environ["CUDA_VISIBLE_DEVICES"]= args.gpu_node
 
-num_classes = 5
-
-if not args.structure in ['unfreezeall', 'freezeall','unfreezetop10']:
-    raise Exception('Freeze any layers? Choose to unfreezeall/freezeall/unfreezetop10 layers for the network.')
-
-
-image_size = args.image_size
-batch_size = args.batch_size
-num_epoches = args.epoch
-
-df_t=pd.read_csv(args.train_path)
-df_v=pd.read_csv(args.val_path)
-
-train_variables = [
-       'kvp','manufacturer','Home_O2','Occupation','CurrentSmoker','FormerSmoker','Hx_disease','sex','age',
-          'pulm_HTN','Biopsy','FEV1','FVC','FEV1/FVC','DLCO','thickness']
-
-ss = StandardScaler()
-df_norm_train = pd.DataFrame(ss.fit_transform(df_t[train_variables]),columns = df_t[train_variables].columns)
-df_norm_train['filename'] = df_t.filename
-df_norm_val = pd.DataFrame(ss.fit_transform(df_v[train_variables]),columns = df_v[train_variables].columns)
-df_norm_val['filename'] = df_v.filename
-
-
-def get_compiled_model():
-    meta_input = Input(shape=(df_norm_train.shape[1]-1,), name='text') # 20 is the number of clinical variables
-    meta = Dense(64,activation='relu')(meta_input) ## this is the MLP to train clinical variables
-    meta = Dense(32,activation='relu')(meta)
-    
-    model_dir ="../RadImageNet_models/RadImageNet-IRV2-notop.h5" ###RadImageNet pretrained models can be downloaded at https://github.com/BMEII-AI/RadImageNet
-    base_model = InceptionResNetV2(weights=model_dir, input_shape=(image_size, image_size, 3), include_top=False,pooling='avg')
-    if args.structure == 'freezeall':
-        for layer in base_model.layers:
-            layer.trainable = False
-    if args.structure == 'unfreezeall':
-        pass
-    if args.structure == 'unfreezetop10':
-        for layer in base_model.layers[:-10]:
-            layer.trainable = False
-    x = base_model.output
-    x = Dense(1024, activation='relu')(x)
-    x = Dense(512, activation='relu')(x)
-    x = Dense(32, activation='relu')(x)
-    
-    concatenated = Concatenate(axis=-1)([x, meta]) ## combine image and cv
-    concat = Dropout(0.5)(concatenated)
-
-    logits = Dense(num_classes, activation='softmax')(concat)
-    my_new_model = Model(inputs=[base_model.input,meta_input], outputs=logits)
-
-    adam = Adam(lr=args.lr, beta_1=0.9, beta_2=0.999, decay=0.0001)
-    my_new_model.compile(optimizer=adam, loss=CategoricalCrossentropy(), metrics=['accuracy'])
-    return my_new_model
-
-
-# Create a MirroredStrategy.
-strategy = tf.distribute.MirroredStrategy()
-print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
-
-with strategy.scope():
-    # Everything that creates variables should be under the strategy scope.
-    # In general this is only model construction & `compile()`.
-    model = get_compiled_model()
-
-train_steps =  df_norm_train.shape[0]/ batch_size
-val_steps = df_norm_val.shape[0] / batch_size
-
+### ImageTextDataGenerator class will process clinical info and img_files together during data generation process
 class ImageTextDataGenerator(keras.utils.Sequence):
     """Generates data for joint input."""
     def __init__(self, 
@@ -190,12 +123,59 @@ class ImageTextDataGenerator(keras.utils.Sequence):
         X = [np.array(X_img), np.array(X_clinical)]
         return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
 
+###build model function
+def get_compiled_model():
+    meta_input = Input(shape=(df_norm_train.shape[1]-1,), name='text') # 20 is the number of clinical variables
+    meta = Dense(64,activation='relu')(meta_input) ## this is the MLP to train clinical variables
+    meta = Dense(32,activation='relu')(meta)
+    
+    model_dir ="../RadImageNet_models/RadImageNet-IRV2-notop.h5" ###RadImageNet pretrained models can be downloaded at https://github.com/BMEII-AI/RadImageNet
+    base_model = InceptionResNetV2(weights=model_dir, input_shape=(image_size, image_size, 3), include_top=False,pooling='avg')
+    x = base_model.output
+    x = Dense(1024, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
+    x = Dense(32, activation='relu')(x)
+    
+    concatenated = Concatenate(axis=-1)([x, meta]) ## combine image and cv
+    concat = Dropout(0.5)(concatenated)
+
+    logits = Dense(num_classes, activation='softmax')(concat)
+    my_new_model = Model(inputs=[base_model.input,meta_input], outputs=logits)
+
+    adam = Adam(lr=args.lr, beta_1=0.9, beta_2=0.999, decay=0.0001)
+    my_new_model.compile(optimizer=adam, loss=CategoricalCrossentropy(), metrics=['accuracy'])
+    return my_new_model
+
+
+num_classes = 5
+image_size = args.image_size
+batch_size = args.batch_size
+num_epoches = args.epoch
+
+df_t=pd.read_csv(args.train_path)
+df_v=pd.read_csv(args.val_path)
+
+###clinical info variables for model development 
+train_variables = [
+       'kvp','manufacturer','Home_O2','Occupation','CurrentSmoker','FormerSmoker','Hx_disease','sex','age',
+          'pulm_HTN','Biopsy','FEV1','FVC','FEV1/FVC','DLCO','thickness']
+
+ss = StandardScaler()
+df_norm_train = pd.DataFrame(ss.fit_transform(df_t[train_variables]),columns = df_t[train_variables].columns)
+df_norm_train['filename'] = df_t.filename
+df_norm_val = pd.DataFrame(ss.fit_transform(df_v[train_variables]),columns = df_v[train_variables].columns)
+df_norm_val['filename'] = df_v.filename
+
+model = get_compiled_model()
+
+train_steps =  df_norm_train.shape[0]/ batch_size
+val_steps = df_norm_val.shape[0] / batch_size
+
 filepath="./models/classification-joint-CNN.h5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
 
 train_labels = df_t[['Consensus']]
 val_labels = df_v[['Consensus']]
-
 train_labels['filename'] = df_norm_train['filename']
 val_labels['filename'] = df_norm_val['filename']
 
