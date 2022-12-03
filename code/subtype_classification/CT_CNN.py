@@ -1,20 +1,17 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications import InceptionResNetV2
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, GlobalAveragePooling2D, BatchNormalization
-from tensorflow.keras.layers import Dense, Dropout, Flatten, Activation, Concatenate, Lambda
+from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint,Callback, TensorBoard
+from tensorflow.keras.callbacks import  ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 import os
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 from sklearn.metrics import roc_auc_score
-from tensorflow.keras import Input
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -23,14 +20,11 @@ parser.add_argument('--val_path', type=str, default='./data/classification/val_j
 parser.add_argument('--test_path', type=str, default='./data/classification/test_joint.csv')
 args = parser.parse_args()
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-
 
 df_train=pd.read_csv(args.train_path)
 df_val=pd.read_csv(args.val_path)
 df_test = pd.read_csv(args.test_path)
-
 
 num_classes = 5
 batch_size = 400
@@ -39,7 +33,6 @@ learning_rate = 0.001
 weight_decay = 0.0001
 input_shape = (512, 512, 3)
 image_size = 256 
-
 
 train_data_generator = ImageDataGenerator(preprocessing_function=preprocess_input,
                                     rescale=1./255,
@@ -77,7 +70,7 @@ validation_generator = data_generator.flow_from_dataframe(
 
 
 checkpoint_filepath="./models/classification-CT-CNN.h5"
-checkpoint_callback = keras.callbacks.ModelCheckpoint(
+checkpoint_callback = ModelCheckpoint(
         checkpoint_filepath,
         monitor="val_loss",
         save_best_only=True,
@@ -91,9 +84,9 @@ checkpoint_callback = keras.callbacks.ModelCheckpoint(
 def get_compiled_model():
     model_dir ="../RadImageNet_models/RadImageNet-IRV2-notop.h5"
     base_model = InceptionResNetV2(weights=model_dir, input_shape=(image_size, image_size, 3), include_top=False,pooling='avg')
-    y = base_model.output   
-    y = Dropout(0.5)(y)
-    y = Dense(1024, activation='softmax')(y)
+    for layer in base_model.layers[:-10]:
+        layer.trainable = False 
+    y = base_model.output
     predictions = Dense(num_classes, activation='softmax')(y)
     model = Model(inputs=base_model.input, outputs=predictions)
     adam = Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999, decay=0.0001)
