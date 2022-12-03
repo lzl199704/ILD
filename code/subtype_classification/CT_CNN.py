@@ -30,8 +30,6 @@ num_classes = 5
 batch_size = 400
 num_epoches = 40
 learning_rate = 0.001
-weight_decay = 0.0001
-input_shape = (512, 512, 3)
 image_size = 256 
 
 train_data_generator = ImageDataGenerator(preprocessing_function=preprocess_input,
