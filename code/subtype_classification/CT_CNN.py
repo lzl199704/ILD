@@ -48,7 +48,7 @@ data_generator = ImageDataGenerator(preprocessing_function=preprocess_input, res
 train_generator = train_data_generator.flow_from_dataframe(
         dataframe=df_train,
         x_col = 'filename',
-        y_col = 'Consensus',
+        y_col = 'label',
         target_size=(image_size, image_size),
         batch_size=batch_size,
         shuffle=True,
@@ -59,7 +59,7 @@ train_generator = train_data_generator.flow_from_dataframe(
 validation_generator = data_generator.flow_from_dataframe(
         dataframe=df_val,
         x_col = 'filename',
-        y_col = 'Consensus',
+        y_col = 'label',
         target_size=(image_size, image_size),
         batch_size=batch_size,
         shuffle=True,
