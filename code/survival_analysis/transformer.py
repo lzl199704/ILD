@@ -19,9 +19,6 @@ parser.add_argument('--val_path', type=str, default='./data/survival_analysis/ti
 parser.add_argument('--test_path', type=str, default='./data/survival_analysis/time_series_test.csv')
 args = parser.parse_args()
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
-
 ### annotate label with following: L indicates alive after three years; D indicates dead within three years;
 def get_label(f):
     l = []
