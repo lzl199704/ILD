@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import InceptionResNetV2
 from tensorflow.keras.layers import Input
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
 from tensorflow.keras.callbacks import  ModelCheckpoint
@@ -19,8 +19,6 @@ parser.add_argument('--train_path', type=str, default='./data/classification/tra
 parser.add_argument('--val_path', type=str, default='./data/classification/val_joint.csv')
 parser.add_argument('--test_path', type=str, default='./data/classification/test_joint.csv')
 args = parser.parse_args()
-
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 df_train=pd.read_csv(args.train_path)
 df_val=pd.read_csv(args.val_path)
@@ -44,7 +42,6 @@ train_data_generator = ImageDataGenerator(preprocessing_function=preprocess_inpu
 
 data_generator = ImageDataGenerator(preprocessing_function=preprocess_input, rescale=1./255)
 
-
 train_generator = train_data_generator.flow_from_dataframe(
         dataframe=df_train,
         x_col = 'filename',
@@ -54,7 +51,6 @@ train_generator = train_data_generator.flow_from_dataframe(
         shuffle=True,
         seed=726,
         class_mode='raw')
-
 
 validation_generator = data_generator.flow_from_dataframe(
         dataframe=df_val,
@@ -66,7 +62,6 @@ validation_generator = data_generator.flow_from_dataframe(
         seed=726,
         class_mode='raw')
 
-
 checkpoint_filepath="./models/classification-CT-CNN.h5"
 checkpoint_callback = ModelCheckpoint(
         checkpoint_filepath,
@@ -76,7 +71,6 @@ checkpoint_callback = ModelCheckpoint(
         mode='min',
         verbose=1
     )
-
 
 ###RadImageNet pretrained models can be downloaded at https://github.com/BMEII-AI/RadImageNet
 def get_compiled_model():
