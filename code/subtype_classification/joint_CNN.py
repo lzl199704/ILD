@@ -5,11 +5,10 @@ from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications import InceptionResNetV2
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, GlobalAveragePooling2D, BatchNormalization
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Activation, Concatenate, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint,Callback, TensorBoard
+from tensorflow.keras.callbacks import ModelCheckpoint,Callback
 from tensorflow.keras.optimizers import Adam
 import os
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
