@@ -126,7 +126,7 @@ def get_compiled_model():
     meta = Dense(64,activation='relu')(meta_input) ## this is the MLP to train clinical variables
     meta = Dense(32,activation='relu')(meta)
     
-    model_dir ="../RadImageNet_models/RadImageNet-IRV2-notop.h5" ###RadImageNet pretrained models can be downloaded at https://github.com/BMEII-AI/RadImageNet
+    model_dir ="../RadImageNet_models/CT-IRV2-notop.h5" ###RadImageNet pretrained models can be downloaded at https://github.com/BMEII-AI/RadImageNet
     base_model = InceptionResNetV2(weights=model_dir, input_shape=(image_size, image_size, 3), include_top=False,pooling='avg')
     x = base_model.output
     x = Dense(1024, activation='relu')(x)
