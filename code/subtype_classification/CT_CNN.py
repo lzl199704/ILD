@@ -74,7 +74,7 @@ checkpoint_callback = ModelCheckpoint(
 
 ###RadImageNet pretrained models can be downloaded at https://github.com/BMEII-AI/RadImageNet
 def get_compiled_model():
-    model_dir ="../RadImageNet_models/RadImageNet-IRV2-notop.h5"
+    model_dir ="../RadImageNet_models/CT-IRV2-notop.h5"
     base_model = InceptionResNetV2(weights=model_dir, input_shape=(image_size, image_size, 3), include_top=False,pooling='avg')
     for layer in base_model.layers[:-10]:
         layer.trainable = False 
